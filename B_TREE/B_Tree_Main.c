@@ -56,13 +56,12 @@ Node* btree_createNode(bool leaf)
     if(newNode == NULL)
     {
         printf("[btree_createNode] Memory allocation failed\n");
-        
         return NULL;
     }
 
     newNode->leaf = leaf;
     newNode->cnt_key = 0;
-    
+
     for(int i = 0; i < MAX_KEY_SIZE; i++)
     {
         newNode->key[i] = 0;
@@ -84,7 +83,7 @@ void btree_insert(Node* cur_node, int key)
         root->cnt_key = 1;
         return;
     }
-    
+
     // 루트가 포화 상태인 경우
     if(root->cnt_key == MAX_KEY_SIZE)
     {
@@ -93,41 +92,42 @@ void btree_insert(Node* cur_node, int key)
         btree_splitChild(newRoot, 0);
         root = newRoot;
     }
-    
+
     btree_insertNonFull(root, key);
 }
+
 
 // 비포화 노드에 키 삽입
 void btree_insertNonFull(Node* node, int key)
 {
     int i = node->cnt_key - 1;
-    
-    if (node->leaf) 
+
+    if (node->leaf)
     {
         // 리프 노드인 경우: key를 올바른 위치에 삽입
-        while (i >= 0 && node->key[i] > key) 
+        while (i >= 0 && node->key[i] > key)
         {
             node->key[i + 1] = node->key[i];
             i--;
         }
         node->key[i + 1] = key;
         node->cnt_key++;
-    } 
-    else 
+    }
+    else
     {
         // 내부 노드인 경우: 적절한 자식 노드 찾기
-        while (i >= 0 && node->key[i] > key) 
+        while (i >= 0 && node->key[i] > key)
         {
             i--;
         }
         i++;
-        
+
         // 자식 노드가 포화 상태인지 확인
-        if (node->child[i]->cnt_key == MAX_KEY_SIZE) 
+        if (node->child[i]->cnt_key == MAX_KEY_SIZE)
         {
             btree_splitChild(node, i);
             // 분할 후 key가 어느 쪽에 들어가야 하는지 결정
-            if (key > node->key[i]) 
+            if (key > node->key[i])
             {
                 i++;
             }
@@ -136,17 +136,87 @@ void btree_insertNonFull(Node* node, int key)
     }
 }
 
-void btree_splitChild(Node* node, int idx)
+
+/*
+SplitChild 절차:
+1. mid 위치 계산
+2. 오른쪽 노드 생성 → mid+1 ~ 끝까지 key, child 복사
+3. 왼쪽 노드 크기 줄이기
+4. 부모에 mid key 삽입
+5. 부모 child[idx+1]에 오른쪽 노드 연결
+*/
+void btree_splitChild(Node* parent_node, int idx)
 {
+    Node* left_node = parent_node->child[idx];
+    Node* right_node = btree_createNode(left_node->leaf);
 
+    int mid = MAX_KEY_SIZE / 2;          // 가운데 key 위치
+    int midKey = left_node->key[mid];    // 부모에 올릴 key를 미리 저장
+
+    // right_node에 mid+1 ~ 끝까지 key 복사
+    right_node->cnt_key = MAX_KEY_SIZE - mid - 1;
+    for (int i = 0; i < right_node->cnt_key; i++)
+    {
+        right_node->key[i] = left_node->key[mid + 1 + i];
+    }
+
+    // leaf가 아니면 자식 포인터도 분할
+    if (!left_node->leaf)
+    {
+        for (int i = 0; i <= right_node->cnt_key; i++)
+        {
+            right_node->child[i] = left_node->child[mid + 1 + i];
+        }
+    }
+
+    // left_node의 key 개수 줄이기
+    left_node->cnt_key = mid;
+
+    // 부모 child 자리 뒤로 밀기
+    for (int i = parent_node->cnt_key; i > idx; i--)
+    {
+        parent_node->child[i + 1] = parent_node->child[i];
+    }
+    parent_node->child[idx + 1] = right_node;
+
+    // 부모 key 자리 뒤로 밀기
+    for (int i = parent_node->cnt_key; i > idx; i--)
+    {
+        parent_node->key[i] = parent_node->key[i - 1];
+    }
+
+    // 가운데 key를 부모에 삽입
+    parent_node->key[idx] = midKey;
+    parent_node->cnt_key++;
 }
-
 
 
 void btree_printTree(Node* root, int level)
 {
-	
+    if(root == NULL)
+    {
+        printf("Tree is empty\n");
+        return;
+    }
 
+    for(int i = 0; i < level; i++)
+    {
+        printf("  ");
+    }
+    printf("Node: ");
+    for(int i = 0; i < root->cnt_key; i++)
+    {
+        printf("%d ", root->key[i]);
+    }
+    printf("\n");
+
+    if(!root->leaf)
+    {
+        for(int i = 0; i <= root->cnt_key; i++)
+        {
+            btree_printTree(root->child[i], level + 1);
+        }
+    }
 }
 
 int main()
