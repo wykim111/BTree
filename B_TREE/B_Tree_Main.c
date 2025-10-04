@@ -191,6 +191,111 @@ void btree_splitChild(Node* parent_node, int idx)
     parent_node->cnt_key++;
 }
 
+/*
+    <삭제 로직>
+
+1-1. 삭제할 key 탐색
+     - 현재 노드 key[] 배열에서 key와 비교하며 위치(idx) 찾기
+     - key[idx] == val → 현재 노드에서 삭제 가능
+     - key[idx] > val  → 자식[idx]로 이동하여 재귀 호출
+
+------------------------------------------------------------------
+[2. Case 구분]
+
+Case A. key가 현재 노드에 있고, 현재 노드가 "리프"
+    - key를 단순 삭제
+    - 뒤의 key들을 앞으로 shift
+    - cnt_key--
+
+Case B. key가 현재 노드에 있고, 현재 노드가 "내부 노드"
+    1) 왼쪽 자식의 key 개수가 최소(MIN_KEY_SIZE) 이상
+        → predecessor(왼쪽 서브트리 최댓값) 찾아 교체
+        → 왼쪽 자식에서 predecessor 재귀 삭제
+    2) 오른쪽 자식의 key 개수가 최소(MIN_KEY_SIZE) 이상
+        → successor(오른쪽 서브트리 최솟값) 찾아 교체
+        → 오른쪽 자식에서 successor 재귀 삭제
+    3) 양쪽 자식 모두 최소 키만 가지고 있다면
+        → 자식 두 개를 merge
+        → merge된 자식에서 재귀 삭제
+
+Case C. key가 현재 노드에 없고, 현재 노드가 "리프"
+    - 트리에 없는 key → 삭제 종료
+
+Case D. key가 현재 노드에 없고, 현재 노드가 "내부 노드"
+    - 자식[idx] 방향으로 내려가서 삭제 진행
+    - 단, 내려가기 전에 자식[idx]의 key 개수가 최소라면 balance 필요
+        → 왼쪽/오른쪽 형제에서 빌리기(borrow)
+        → 둘 다 불가능하면 merge 실행 후 진행
+
+------------------------------------------------------------------
+[3. Balance (형제에게 빌리기)]
+
+- btree_balanceNode(parent, child_pos)
+    1) 왼쪽 형제의 key 개수가 MIN_KEY_SIZE 초과
+        → borrowFromLeft()
+    2) 오른쪽 형제의 key 개수가 MIN_KEY_SIZE 초과
+        → borrowFromRight()
+    3) 둘 다 불가능하면 merge 실행
+
+- borrowFromLeft()
+    : 부모의 key를 child에 내리고, 왼쪽 형제의 마지막 key를 부모로 올린다.
+
+- borrowFromRight()
+    : 부모의 key를 child에 내리고, 오른쪽 형제의 첫 key를 부모로 올린다.
+
+------------------------------------------------------------------
+[4. Merge (형제와 병합)]
+
+- btree_mergeNode(parent, left_index, right_index)
+    1) parent->key[left_index]를 왼쪽 노드에 추가
+    2) 오른쪽 노드의 key들과 child들을 왼쪽으로 이동
+    3) parent에서 key[left_index]와 child[right_index] 제거
+    4) cnt_key--, 오른쪽 노드는 free 처리
+
+------------------------------------------------------------------
+[5. Predecessor / Successor 찾기]
+
+- predecessor = 왼쪽 자식으로 내려가면서 계속 오른쪽 끝 child로 탐색
+- successor   = 오른쪽 자식으로 내려가면서 계속 왼쪽 끝 child로 탐색
+
+------------------------------------------------------------------
+[6. 루트 처리]
+
+- 삭제 후 root->cnt_key == 0 인 경우
+    : root가 leaf가 아니면 root = root->child[0]
+    : root가 leaf이면 트리 전체가 empty
+    → root free 처리
+
+
+*/
+
+
+int predecessor(Node* node, int key_pos)
+{
+    Node* cur_node = node->child[key_pos];
+
+    //단말 노드까지 탐색
+    while (!cur_node->leaf)
+    {
+        cur_node = cur_node->child[cur_node->cnt_key];
+    }
+    //단말 노드에서 마지막 key 반환
+    return cur_node->key[cur_node->cnt_key - 1];
+}
+
+int successor(Node* node, int key_pos)
+{
+    Node* cur_node = node->child[key_pos];
+
+    //단말 노드까지 탐색
+    while (!cur_node->leaf)
+    {
+        cur_node = cur_node->child[0];
+    }
+    
+    //단말 노드에서 첫번째 key 반환
+    return cur_node->key[0];
+}
 
 
 void btree_printTree(Node* root, int level)
