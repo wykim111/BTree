@@ -150,17 +150,18 @@ void btree_splitChild(Node* parent_node, int idx)
     Node* left_node = parent_node->child[idx];
     Node* right_node = btree_createNode(left_node->leaf);
 
-    int mid = MAX_KEY_SIZE / 2;          // 가운데 key 위치
-    int midKey = left_node->key[mid];    // 부모에 올릴 key를 미리 저장
+    int mid = left_node->cnt_key / 2;   // 실제 key 개수 기준으로 가운데 선택
+    int midKey = left_node->key[mid];   // 부모로 올릴 key
 
-    // right_node에 mid+1 ~ 끝까지 key 복사
-    right_node->cnt_key = MAX_KEY_SIZE - mid - 1;
-    for (int i = 0; i < right_node->cnt_key; i++)
+    // 오른쪽 노드에 mid+1 ~ cnt_key-1 까지 복사
+    int j = 0;
+    for (int i = mid + 1; i < left_node->cnt_key; i++)
     {
-        right_node->key[i] = left_node->key[mid + 1 + i];
+        right_node->key[j++] = left_node->key[i];
     }
+    right_node->cnt_key = j;
 
-    // leaf가 아니면 자식 포인터도 분할
+    // leaf가 아니면 자식도 분할
     if (!left_node->leaf)
     {
         for (int i = 0; i <= right_node->cnt_key; i++)
@@ -169,7 +170,7 @@ void btree_splitChild(Node* parent_node, int idx)
         }
     }
 
-    // left_node의 key 개수 줄이기
+    // 왼쪽 노드 key 개수 줄이기
     left_node->cnt_key = mid;
 
     // 부모 child 자리 뒤로 밀기
@@ -185,39 +186,45 @@ void btree_splitChild(Node* parent_node, int idx)
         parent_node->key[i] = parent_node->key[i - 1];
     }
 
-    // 가운데 key를 부모에 삽입
+    // 부모에 가운데 key 삽입
     parent_node->key[idx] = midKey;
     parent_node->cnt_key++;
 }
 
 
+
 void btree_printTree(Node* root, int level)
 {
-    if(root == NULL)
+    if (root == NULL)
     {
         printf("Tree is empty\n");
         return;
     }
 
-    for(int i = 0; i < level; i++)
+    // 레벨과 노드 정보 출력
+    for (int i = 0; i < level; i++)
     {
-        printf("  ");
+        printf("    ");  // 레벨 깊이만큼 들여쓰기
     }
-    printf("Node: ");
-    for(int i = 0; i < root->cnt_key; i++)
+
+    printf("Level %d | Keys(%d): ", level, root->cnt_key);
+    for (int i = 0; i < root->cnt_key; i++)
     {
         printf("%d ", root->key[i]);
     }
     printf("\n");
 
-    if(!root->leaf)
+    // 자식 노드 출력
+    if (!root->leaf)
     {
-        for(int i = 0; i <= root->cnt_key; i++)
+        for (int i = 0; i <= root->cnt_key; i++)
         {
             btree_printTree(root->child[i], level + 1);
         }
     }
 }
+
+
 
 int main()
 {
@@ -237,6 +244,9 @@ int main()
     btree_insert(root, 50);
     btree_insert(root, 60);
     btree_insert(root, 70);
+
+    btree_printTree(root, 0);
+
     
     return 0;
 }
