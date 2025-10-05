@@ -312,11 +312,36 @@ void btree_deleteFromNode(Node* node, int key)
     {
         if(node->leaf == true)// case A : key가 현재 노드에 있고, 현재 노드가 리프 노드인 경우
         {
+           node->key[idx] = 0;
+           
+           for(int i=0;i<node->cnt_key;i++)
+           {
+                node->key[i] = node->key[i + 1];
+           }
 
         }
         else// case B : key가 현재 노드에 있고, 현재 노드가 내부 노드인 경우
         {
+			//왼쪽에 빌릴 수있는 상황인지
+			if (node->child[idx]->cnt_key > MIN_KEY_SIZE)
+			{
+				int pred = btree_findPredecessor(node, idx);				
+				node->key[idx] = pred;
+				btree_deleteFromNode(node->child[idx], pred);
 
+			}
+			else if (node->child[idx + 1]->cnt_key > MIN_KEY_SIZE)
+			{
+				int succ = btree_findSuccessor(node, idx);
+				node->key[idx] = succ;
+				btree_deleteFromNode(node->child[idx + 1], succ);
+
+			}
+			else//왼쪽, 오른쪽 모두 빌릴 수  없으면 자식들 합치기
+			{
+				btree_mergeNode(node, idx, idx + 1);
+				btree_deleteFromNode(node->child[idx], key);
+			}
         }
     }
     else// case C or D : key가 현재 노드에 없는 경우
@@ -326,10 +351,56 @@ void btree_deleteFromNode(Node* node, int key)
             printf("Key not found\n");
             return;
         }
+		else //case D : 삭제할 key가 현재 노드에 없고, 내부 노드
+		{
+
+		}
+
     }
 }
 
 
+void btree_borrowFromLeft(Node* node, int child_pos)
+{
+	Node* right_node = node->child[child_pos];
+	Node* sibling_node = node->child[child_pos - 1];
+
+	//right_node의 key와 child를 한 칸 뒤로 밀기
+	for (int i = right_node->cnt_key - 1; i >= 0; i--)
+	{
+		right_node->child[i + 1] = right_node->child[i];
+	}
+
+	if (right_node->leaf == true)
+	{
+		for (int i = right_node->cnt_key; i >= 0; i--)
+			right_node->child[i + 1] = right_node->child[i];
+	}
+
+	//부모의 key를 right_node에 저장
+	right_node->key[0] = node->key[child_pos - 1];
+
+	if (right_node->leaf == false)
+	{
+		right_node->child[0] = sibling_node[sibling_node->cnt_key];
+	}
+
+	node->key[child_pos - 1] = sibling_node->key[sibling_node->cnt_key - 1];
+
+	sibling_node->cnt_key--;
+	right_node->cnt_key++;
+
+}
+
+void btree_borrowFromRight(Node* node, int child_pos)
+{
+
+}
+
+void btree_mergeNode(Node* parent, int left_index, int right_index)
+{
+
+}
 
 
 
