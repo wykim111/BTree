@@ -368,7 +368,7 @@ void btree_borrowFromLeft(Node* node, int child_pos)
 	//right_node의 key와 child를 한 칸 뒤로 밀기
 	for (int i = right_node->cnt_key - 1; i >= 0; i--)
 	{
-		right_node->child[i + 1] = right_node->child[i];
+		right_node->key[i + 1] = right_node->key[i];
 	}
 
 	if (right_node->leaf == true)
@@ -394,7 +394,33 @@ void btree_borrowFromLeft(Node* node, int child_pos)
 
 void btree_borrowFromRight(Node* node, int child_pos)
 {
+	Node* left_node = node->child[child_pos];
+	Node* sibling_node = node->child[child_pos + 1];
 
+	//부모 key를 child 맨 끝에 추가
+	left_node->key[left_node->cnt_key] = node->key[child_pos];
+
+	//silbling의 첫번째 child를 child의 마지막 child로 연결(leaf가 아닌 경우)
+	if (left_node->leaf == false)
+	{
+		left_node->child[left_node->cnt_key + 1] = sibling_node->child[0];
+	}
+
+	//sibling의 첫 key를 부모로 올림.
+	node->key[child_pos] = sibling_node->key[0];
+
+	// sibling key들과 child 포인터를 한 칸 앞으로 당김
+	for (int i = 1; i < sibling_node->cnt_key; i++)
+		sibling_node->key[i - 1] = sibling_node->key[i];
+	if (!sibling_node->leaf)
+	{
+		for (int i = 1; i <= sibling_node->cnt_key; i++)
+			sibling_node->child[i - 1] = sibling_node->child[i];
+	}
+
+	//갯수 조정
+	sibling_node->cnt_key--;
+	left_node->cnt_key++;
 }
 
 void btree_mergeNode(Node* parent, int left_index, int right_index)
