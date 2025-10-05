@@ -270,7 +270,71 @@ Case D. key가 현재 노드에 없고, 현재 노드가 "내부 노드"
 */
 
 
-int predecessor(Node* node, int key_pos)
+// 삭제 함수 
+void btree_delete(int key)
+{
+    if(root == NULL)
+    {
+        printf("Tree is empty\n");
+        return;
+    }
+    btree_deleteFromNode(root, key);
+   
+    if(root->cnt_key == 0)
+    {
+        Node* temp_node = root;
+
+        if(root->leaf == false)
+        {
+            root = temp_node->child[0];
+        }
+        else//root가 단말노드인 경우
+        {
+            root = NULL;
+        }
+        free(temp_node);
+    }
+   
+}
+
+void btree_deleteFromNode(Node* node, int key)
+{
+    int idx = 0;
+
+    //삭제할 노드의 위치 탐색
+    while (idx < node->cnt_key && node->key[idx] < key)
+    {
+        ++idx;
+    }
+
+    //case A or B : key가 현재 노드에 있는 경우
+    if(idx < node->cnt_key && node->key[idx] == key)
+    {
+        if(node->leaf == true)// case A : key가 현재 노드에 있고, 현재 노드가 리프 노드인 경우
+        {
+
+        }
+        else// case B : key가 현재 노드에 있고, 현재 노드가 내부 노드인 경우
+        {
+
+        }
+    }
+    else// case C or D : key가 현재 노드에 없는 경우
+    {
+        if(node->leaf == true)// case C : key가 현재 노드에 없고, 현재 노드가 리프 노드인 경우
+        {
+            printf("Key not found\n");
+            return;
+        }
+    }
+}
+
+
+
+
+
+
+int btree_findPredecessor(Node* node, int key_pos)
 {
     Node* cur_node = node->child[key_pos];
 
@@ -283,7 +347,7 @@ int predecessor(Node* node, int key_pos)
     return cur_node->key[cur_node->cnt_key - 1];
 }
 
-int successor(Node* node, int key_pos)
+int btree_findSuccessor(Node* node, int key_pos)
 {
     Node* cur_node = node->child[key_pos];
 
@@ -329,6 +393,19 @@ void btree_printTree(Node* root, int level)
     }
 }
 
+
+void btree_freeTree(Node* root)
+{
+    if (root == NULL)
+    {
+        return;
+    }
+    for (int i = 0; i <= root->cnt_key; i++)
+    {
+        btree_freeTree(root->child[i]);
+    }
+    free(root);
+}
 
 
 int main()
