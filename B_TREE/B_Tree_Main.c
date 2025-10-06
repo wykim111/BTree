@@ -194,13 +194,13 @@ void btree_splitChild(Node* parent_node, int idx)
 /*
     <삭제 로직>
 
-1-1. 삭제할 key 탐색
+1 삭제할 key 탐색
      - 현재 노드 key[] 배열에서 key와 비교하며 위치(idx) 찾기
      - key[idx] == val → 현재 노드에서 삭제 가능
      - key[idx] > val  → 자식[idx]로 이동하여 재귀 호출
 
 ------------------------------------------------------------------
-[2. Case 구분]
+2. Case 구분
 
 Case A. key가 현재 노드에 있고, 현재 노드가 "리프"
     - key를 단순 삭제
@@ -228,7 +228,7 @@ Case D. key가 현재 노드에 없고, 현재 노드가 "내부 노드"
         → 둘 다 불가능하면 merge 실행 후 진행
 
 ------------------------------------------------------------------
-[3. Balance (형제에게 빌리기)]
+3. Balance (형제에게 빌리기)
 
 - btree_balanceNode(parent, child_pos)
     1) 왼쪽 형제의 key 개수가 MIN_KEY_SIZE 초과
@@ -244,7 +244,7 @@ Case D. key가 현재 노드에 없고, 현재 노드가 "내부 노드"
     : 부모의 key를 child에 내리고, 오른쪽 형제의 첫 key를 부모로 올린다.
 
 ------------------------------------------------------------------
-[4. Merge (형제와 병합)]
+4. Merge (형제와 병합)
 
 - btree_mergeNode(parent, left_index, right_index)
     1) parent->key[left_index]를 왼쪽 노드에 추가
@@ -253,13 +253,13 @@ Case D. key가 현재 노드에 없고, 현재 노드가 "내부 노드"
     4) cnt_key--, 오른쪽 노드는 free 처리
 
 ------------------------------------------------------------------
-[5. Predecessor / Successor 찾기]
+5. Predecessor / Successor 찾기
 
 - predecessor = 왼쪽 자식으로 내려가면서 계속 오른쪽 끝 child로 탐색
 - successor   = 오른쪽 자식으로 내려가면서 계속 왼쪽 끝 child로 탐색
 
 ------------------------------------------------------------------
-[6. 루트 처리]
+6. 루트 처리
 
 - 삭제 후 root->cnt_key == 0 인 경우
     : root가 leaf가 아니면 root = root->child[0]
