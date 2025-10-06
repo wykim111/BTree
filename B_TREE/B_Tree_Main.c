@@ -353,8 +353,40 @@ void btree_deleteFromNode(Node* node, int key)
         }
 		else //case D : 삭제할 key가 현재 노드에 없고, 내부 노드
 		{
+			bool is_last_child = false;
+
+			if (idx == node->cnt_key)
+			{
+				is_last_child = true;
+			}
+			else
+			{
+				is_last_child = false;
+			}
+
+			//balance 수행
+			if (node->child[idx]->cnt_key == MIN_KEY_SIZE)
+			{
+				btree_balanceNode(node, idx);
+			}
+
+			/*
+				오직 merge 발생 직후 에만 true가 되며,
+				병합으로 사라진 자식의 오른쪽 key를 삭제해야 할 때
+				왼쪽으로 인덱스를 한 칸 이동시키기 위한 예외 처리
+			*/
+
+			if ((is_last_child == true) && (idx > node->cnt_key))
+			{
+				btree_deleteFromNode(node->child[idx-1],key);
+			}
+			else
+			{
+				btree_deleteFromNode(node->child[idx], key);
+			}
 
 		}
+
 
     }
 }
@@ -463,7 +495,28 @@ void btree_mergeNode(Node* parent, int left_index, int right_index)
 
 }
 
-
+void btree_balanceNode(Node* node, int child_pos)
+{
+	if (child_pos > 0 && node->child[child_pos - 1]->cnt_key > MIN_KEY_SIZE)
+	{
+		btree_borrowFromLeft(node, child_pos);
+	}
+	else if (child_pos < node->cnt_key && node->child[child_pos+1]->cnt_key > MIN_KEY_SIZE)
+	{
+		btree_borrowFromRight(node, child_pos);
+	}
+	else	//둘다 여유가 없는 경우 merge 수행
+	{
+		if (child_pos < node->cnt_key)
+		{
+			btree_mergeNode(node, child_pos, child_pos + 1);
+		}
+		else
+		{
+			btree_mergeNode(node, child_pos-1, child_pos);
+		}
+	}
+}
 
 
 int btree_findPredecessor(Node* node, int key_pos)
@@ -528,7 +581,31 @@ void btree_printTree(Node* root, int level)
 
 Node* btree_search(Node* root, int key)
 {
-	return NULL;
+	if (root == NULL)
+	{
+		return NULL;
+	}
+
+	int idx = 0;
+
+	while (idx < root->cnt_key && key > root->key[idx])
+	{
+		++idx;
+	}
+
+	if (idx < root->cnt_key && root->key[idx] == key)
+	{
+		return root;
+	}
+
+	if (root->leaf == true)
+	{
+		return NULL;
+	}
+
+
+
+	return btree_search(root->child[idx], key);
 }
 
 
@@ -545,30 +622,221 @@ void btree_freeTree(Node* root)
     free(root);
 }
 
-
-int main()
+// 테스트 함수들
+void test_insert()
 {
-    printf("=== B-Tree Test ===\n");
-
+    printf("=== Insert Test ===\n");
+    
+    // 기본 삽입 테스트
     btree_insert(root, 10);
     btree_insert(root, 20);
     btree_insert(root, 5);
     btree_insert(root, 6);
     btree_insert(root, 12);
+    
+    printf("After inserting 10, 20, 5, 6, 12:\n");
+    btree_printTree(root, 0);
+    
+    // Split 테스트 (5차 B-Tree에서 5개 이상 삽입)
     btree_insert(root, 30);
     btree_insert(root, 7);
     btree_insert(root, 17);
     btree_insert(root, 15);
     btree_insert(root, 25);
-    btree_insert(root, 40);
-    btree_insert(root, 50);
-    btree_insert(root, 60);
-    btree_insert(root, 70);
-
+    
+    printf("\nAfter inserting more keys (split test):\n");
     btree_printTree(root, 0);
+}
 
-	btree_freeTree(root);
+void test_search()
+{
+    printf("\n=== Search Test ===\n");
+    
+    int test_keys[] = {10, 20, 5, 6, 12, 30, 7, 17, 15, 25, 99, -1};
+    int test_size = sizeof(test_keys) / sizeof(test_keys[0]);
+    
+    for(int i = 0; i < test_size; i++)
+    {
+        Node* result = btree_search(root, test_keys[i]);
+        if(result != NULL)
+        {
+            printf("Key %d found\n", test_keys[i]);
+        }
+        else
+        {
+            printf("Key %d not found\n", test_keys[i]);
+        }
+    }
+}
 
+void test_delete()
+{
+    printf("\n=== Delete Test ===\n");
+    
+    // 리프 노드에서 삭제
+    printf("Deleting key 6 (leaf node):\n");
+    btree_delete(6);
+    btree_printTree(root, 0);
+    
+    // 내부 노드에서 삭제
+    printf("\nDeleting key 10 (internal node):\n");
+    btree_delete(10);
+    btree_printTree(root, 0);
+    
+    // 존재하지 않는 키 삭제
+    printf("\nDeleting non-existent key 99:\n");
+    btree_delete(99);
+}
+
+void test_edge_cases()
+{
+    printf("\n=== Edge Cases Test ===\n");
+    
+    // 빈 트리에서 삭제
+    printf("Deleting from empty tree:\n");
+    Node* empty_root = NULL;
+    root = empty_root;
+    btree_delete(10);
+    
+    // 빈 트리에서 검색
+    printf("Searching in empty tree:\n");
+    Node* result = btree_search(root, 10);
+    if(result == NULL)
+    {
+        printf("Search in empty tree works correctly\n");
+    }
+    
+    // 단일 노드 삭제
+    printf("\nSingle node operations:\n");
+    btree_insert(root, 100);
+    printf("After inserting single key 100:\n");
+    btree_printTree(root, 0);
+    
+    btree_delete(100);
+    printf("After deleting single key 100:\n");
+    btree_printTree(root, 0);
+}
+
+void test_integration()
+{
+    printf("\n=== Integration Test ===\n");
+    
+    // 대량 데이터 삽입
+    int keys[] = {50, 30, 70, 20, 40, 60, 80, 10, 25, 35, 45, 55, 65, 75, 85};
+    int size = sizeof(keys) / sizeof(keys[0]);
+    
+    printf("Inserting multiple keys: ");
+    for(int i = 0; i < size; i++)
+    {
+        printf("%d ", keys[i]);
+        btree_insert(root, keys[i]);
+    }
+    printf("\n");
+    
+    printf("Final tree structure:\n");
+    btree_printTree(root, 0);
+    
+    // 일부 키 삭제
+    printf("\nDeleting some keys: 20, 40, 60, 80\n");
+    btree_delete(20);
+    btree_delete(40);
+    btree_delete(60);
+    btree_delete(80);
+    
+    printf("After deletions:\n");
+    btree_printTree(root, 0);
+}
+
+void run_all_tests()
+{
+    printf("=== B-Tree Comprehensive Test Suite ===\n\n");
+    
+    test_insert();
+    test_search();
+    test_delete();
+    test_edge_cases();
+    test_integration();
+    
+    printf("\n=== All Tests Completed ===\n");
+}
+
+int main()
+{
+    int choice;
+    printf("=== B-Tree Program ===\n");
+    printf("1. Run original test\n");
+    printf("2. Run comprehensive test suite\n");
+    printf("Enter your choice (1 or 2): ");
+    scanf("%d", &choice);
+    
+    if(choice == 1)
+    {
+        // 기존 테스트 코드
+        printf("=== B-Tree Test ===\n");
+
+        btree_insert(root, 10);
+        btree_insert(root, 20);
+        btree_insert(root, 5);
+        btree_insert(root, 6);
+        btree_insert(root, 12);
+        btree_insert(root, 30);
+        btree_insert(root, 7);
+        btree_insert(root, 17);
+        btree_insert(root, 15);
+        btree_insert(root, 25);
+        btree_insert(root, 40);
+        btree_insert(root, 50);
+        btree_insert(root, 60);
+        btree_insert(root, 70);
+
+		// === 확장된 삽입 테스트 ===
+		btree_insert(root, 2);
+		btree_insert(root, 3);
+		btree_insert(root, 4);
+		btree_insert(root, 11);
+		btree_insert(root, 13);
+		btree_insert(root, 18);
+		btree_insert(root, 19);
+		btree_insert(root, 21);
+		btree_insert(root, 54);
+		btree_insert(root, 55);
+		btree_insert(root, 68);
+		btree_insert(root, 69);
+
+        btree_printTree(root, 0);
+
+        btree_freeTree(root);
+    }
+    else if(choice == 2)
+    {
+        // 새로운 테스트 스위트 실행
+        run_all_tests();
+        btree_freeTree(root);
+    }
+    else
+    {
+        printf("Invalid choice. Running original test...\n");
+        
+        btree_insert(root, 10);
+        btree_insert(root, 20);
+        btree_insert(root, 5);
+        btree_insert(root, 6);
+        btree_insert(root, 12);
+        btree_insert(root, 30);
+        btree_insert(root, 7);
+        btree_insert(root, 17);
+        btree_insert(root, 15);
+        btree_insert(root, 25);
+        btree_insert(root, 40);
+        btree_insert(root, 50);
+        btree_insert(root, 60);
+        btree_insert(root, 70);
+
+
+        btree_printTree(root, 0);
+
+        btree_freeTree(root);
+    }
     
     return 0;
 }
