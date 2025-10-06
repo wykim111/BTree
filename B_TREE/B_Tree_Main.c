@@ -382,7 +382,7 @@ void btree_borrowFromLeft(Node* node, int child_pos)
 
 	if (right_node->leaf == false)
 	{
-		right_node->child[0] = sibling_node[sibling_node->cnt_key];
+		right_node->child[0] = sibling_node ->child[sibling_node->cnt_key];
 	}
 
 	node->key[child_pos - 1] = sibling_node->key[sibling_node->cnt_key - 1];
@@ -425,6 +425,41 @@ void btree_borrowFromRight(Node* node, int child_pos)
 
 void btree_mergeNode(Node* parent, int left_index, int right_index)
 {
+	Node* left_node = parent->child[left_index];
+	Node* right_node = parent->child[right_index];
+
+	// 부모의 key를 왼쪽 자식으로 내려줌.
+	left_node->key[left_node->cnt_key] = parent->key[left_index];
+
+	// 오른쪽 자식의 key들을 모두 왼쪽 자식으로 복사
+	for (int i = 0; i < right_node->cnt_key; i++)
+	{
+		left_node->key[left_node->cnt_key + 1 + i] = right_node->key[i];
+	}
+
+	// 오른쪽 자식의 child 포인터도 모두 복사(단말 노드가 아닌 경우)
+	if (left_node->leaf == false)
+	{
+		for (int i = 0; i <= right_node->cnt_key; i++)
+		{
+			left_node->child[left_node->cnt_key + 1 + i] = right_node->child[i];
+		}
+	}
+
+	//왼쪽 자식의 key 갯수 갱신
+	left_node->cnt_key += right_node->cnt_key + 1;
+	
+	//부모의 key 및 child 배열 정리(빈자리 당기기)
+	for (int i = left_index; i < parent->cnt_key - 1; i++)
+	{
+		parent->key[i] = parent->key[i + 1];
+		parent->child[i + 1] = parent->child[i + 2];
+	}
+
+	parent->cnt_key--;
+
+	//오른쪽 노드 메모리 해제
+	free(right_node);
 
 }
 
@@ -491,6 +526,12 @@ void btree_printTree(Node* root, int level)
 }
 
 
+Node* btree_search(Node* root, int key)
+{
+	return NULL;
+}
+
+
 void btree_freeTree(Node* root)
 {
     if (root == NULL)
@@ -525,6 +566,8 @@ int main()
     btree_insert(root, 70);
 
     btree_printTree(root, 0);
+
+	btree_freeTree(root);
 
     
     return 0;
