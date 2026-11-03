@@ -347,6 +347,16 @@ void btree_deleteFromNode(Node* node, int key)
     }
     else// case C or D : key가 현재 노드에 없는 경우
     {
+/*
+Case D 정리
+
+1. 삭제할 키가 현재 노드에 없으면 idx가 가리키는 자식으로 내려간다.
+2. 내려가기 전에 그 자식의 키가 최소 개수이면 balance를 진행한다.
+3. balance 후:
+    3-1. 마지막 자식이 왼쪽 형제에 머지되어 idx가 범위를 넘어서면(idx > cnt_key) → child[idx-1]로 진입
+    3-2. 그렇지 않으면(balance 안 함, 빌리기, 중간 자식 머지) → child[idx]로 진입
+
+*/
         if(node->leaf == true)// case C : key가 현재 노드에 없고, 현재 노드가 리프 노드인 경우
         {
             printf("Key not found\n");
