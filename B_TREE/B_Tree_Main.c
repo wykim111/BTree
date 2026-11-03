@@ -318,7 +318,8 @@ void btree_deleteFromNode(Node* node, int key)
            {
                 node->key[i] = node->key[i + 1];
            }
-
+            
+           node->cnt_key--;
         }
         else// case B : key가 현재 노드에 있고, 현재 노드가 내부 노드인 경우
         {
@@ -365,7 +366,7 @@ void btree_deleteFromNode(Node* node, int key)
 			}
 
 			//balance 수행
-			if (node->child[idx]->cnt_key == MIN_KEY_SIZE)
+			if (node->child[idx]->cnt_key <= MIN_KEY_SIZE)
 			{
 				btree_balanceNode(node, idx);
 			}
