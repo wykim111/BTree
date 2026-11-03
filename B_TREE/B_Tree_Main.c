@@ -353,7 +353,7 @@ void btree_deleteFromNode(Node* node, int key)
         }
 		else //case D : 삭제할 key가 현재 노드에 없고, 내부 노드
 		{
-			bool is_last_child = false;
+			bool is_last_child = false; // 삭제할 key가 마지막 자식에 있는지 여부를 나타내는 플래그
 
 			if (idx == node->cnt_key)
 			{

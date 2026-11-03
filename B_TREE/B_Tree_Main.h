@@ -149,12 +149,12 @@
 
 #define M					5 //5차 BTREE
 #define MAX_KEY_SIZE		M-1	//한 노드에 저장 가능한 최대 Key size
-#define MIN_KEY_SIZE		2	//한 노드에 저장 가능한 최소 Key size (5차 B-Tree의 경우)
+#define MIN_KEY_SIZE		((M + 1) / 2 - 1)  // ⌈M/2⌉-1 = 2
 
 typedef struct _Node
 {
-    int key[MAX_KEY_SIZE];
-    struct _Node* child[MAX_KEY_SIZE + 1];
+    int key[MAX_KEY_SIZE + 1];
+    struct _Node* child[MAX_KEY_SIZE + 2];
     int cnt_key;
     bool leaf;
 } Node;
