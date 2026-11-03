@@ -176,4 +176,12 @@ int btree_findSuccessor(Node* node, int key_pos);
 void btree_printTree(Node* root, int level);
 void btree_freeTree(Node* root);
 
+// 테스트 함수 선언
+void test_insert();
+void test_search();
+void test_delete();
+void test_edge_cases();
+void test_integration();
+void run_all_tests();
+
 #endif
